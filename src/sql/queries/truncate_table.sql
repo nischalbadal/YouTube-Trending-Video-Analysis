@@ -1,0 +1,5 @@
+TRUNCATE TABLE %s CASCADE;
+
+
+
+

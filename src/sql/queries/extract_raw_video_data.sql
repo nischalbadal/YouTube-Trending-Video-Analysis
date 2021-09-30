@@ -1,0 +1,1 @@
+\copy raw_video FROM  '%s' delimiter ',' csv header
