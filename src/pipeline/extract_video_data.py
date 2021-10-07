@@ -1,21 +1,31 @@
 from utils import *
+import csv
 
 try:
+    
    
     def extract_video_data(fileName, con, cur):
-        with open(fileName, 'r', encoding='utf-8') as f:
-            cur.copy_from(f, 'raw_video', columns=('video_id','trending_date','title','channel_title','category_id','publish_time','tags','views','likes','dislikes','comment_count','thumbnail_link','comments_disabled','ratings_disabled','video_error_or_removed','description'), sep=',')
-        # with open("../sql/queries/extract_raw_video_data.sql") as f:
-        #     sql = ' '.join(map(str, f.readlines()))%fileName
-        #     print(sql)
-        #     cur.execute(sql, fileName)     
-        #     con.commit()
-
-        print("Extraction successful to raw_video table.") 
+        country_list = fileName.split('.csv')[0]
+        country = country_list[11:-6]
+        print("Extracting " + country + " country data to raw_video table.") 
+        print('...')
+        with open(fileName,'r', encoding='ISO-8859-1') as f:
+            i = 0
+            csv_list = csv.reader(f)
+            for row in csv_list:
+                if i==0:
+                    i+=1
+                    continue
+                row.append(country)
+                with open("../sql/queries/extract_raw_video_data.sql") as f:
+                    sql = ' '.join(map(str, f.readlines()))
+                    cur.execute(sql, row)
+                    con.commit()
+        print("Extraction of "+country+" data successful to raw_video table.") 
     
        
-    def archive_video_data(fileName,con, cur):
-        with open("../sql/queries/extract_copy_raw_video_data.sql") as f:
+    def archive_video_data(con, cur):
+        with open("../sql/queries/extract_archive_raw_video_data.sql") as f:
             sql = ' '.join(map(str, f.readlines()))
             cur.execute(sql)
             con.commit()
@@ -30,7 +40,17 @@ try:
         truncate_table("raw_video", con, cur)
 
         extract_video_data("../../data/CAvideos.csv",con,cur)
-        # archive_video_data(con, cur)
+        extract_video_data("../../data/DEvideos.csv",con,cur)
+        extract_video_data("../../data/FRvideos.csv",con,cur)
+        extract_video_data("../../data/GBvideos.csv",con,cur)
+        extract_video_data("../../data/INvideos.csv",con,cur)
+        extract_video_data("../../data/JPvideos.csv",con,cur)
+        extract_video_data("../../data/KRvideos.csv",con,cur)
+        extract_video_data("../../data/MXvideos.csv",con,cur)
+        extract_video_data("../../data/RUvideos.csv",con,cur)
+        extract_video_data("../../data/USvideos.csv",con,cur)
+
+        archive_video_data(con, cur)
 
         cur.close()
         con.close()

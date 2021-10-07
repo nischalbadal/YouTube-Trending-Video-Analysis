@@ -2,6 +2,7 @@ from utils import *
 import json
 from psycopg2.extras import Json
 
+
 try:
    
     def extract_category_data(fileName, con, cur):
@@ -36,6 +37,14 @@ try:
 
         print("Archiving successful to archive_raw_category table.") 
 
+    def load_dim_category_data_table(con, cur):
+        truncate_table("archive_raw_category", con, cur)
+        with open("../sql/queries/extract_dim_category_data.sql") as file:
+                        insert_query = ' '.join(map(str, file.readlines())) 
+                        cur.execute(insert_query)       
+                        con.commit()
+        print("Archiving successful to dim_category table.") 
+      
 
     def main():
         con = connect()
@@ -56,7 +65,7 @@ try:
         extract_category_data("../../data/US_category_id.json",con,cur)
 
         archive_category_data(con,cur)
-
+        load_dim_category_data_table(con, cur)
         cur.close()
         con.close()
 
