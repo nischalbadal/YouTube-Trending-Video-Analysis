@@ -53,8 +53,7 @@ The proposed ER Diagram of the data warehouse would be:
 After conceptual modeling of the system, we now build the physical modeling (or implementation) of the data warehouse. Physical Modeling is done using the postgresql database. All the DDL queries of the physical model of the data warehouse are listed below:
 
 Creating Main schema for data warehouse tables:
-```sql
-```
+
 Creating Dimension Tables:
 ```sql
 CREATE TABLE dim_channel(
