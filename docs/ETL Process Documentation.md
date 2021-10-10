@@ -13,6 +13,7 @@
 - The  raw tables do not have any specific data types as all of them are stored as string to avoid mismatching of date formats from the incoming raw data. It is afterwards casted into their suitable data types using cast() method of postgresql.
 - We also create archive tables for each raw table to maintain a historic datawarehouse that contails all the records before transformation and loading processes.
 - After successful extraction, we now transform the data to load into our fact and dimension tables. 
+- We apply different transformations as: Formatting the trending_date, separating publish_date and publish_time, etc which are furthur explained below.
 - After transformation, we now load the transformed data into respective dimension and fact tables. The order of loading is first to the dimension tables and then they are referenced to the fact tables as mentioned in the steps below.
 - ###### Note: Each table except archive table is truncated initially to clear any previous values (if exists) and the ETL process could be completed without any referential constraint errors.
 
@@ -249,29 +250,134 @@ After the extraction and archiving process is completed successfully, we have tw
 
 In the transformation process, we can create separate tables or temporary tables to store values that is finally loaded into the final table of the warehouse i.e. facts and dimensions.
 
-We create a category table to store category related information from the _raw_category_ table. This table will be used after to load Data Warehouse Tables.
+Since in our data, we do not need to create those intermediate tables, we directly apply transformation and load to the final tables of the warehouse. 
+
+Each process of transforming and loading to the final tables are briefly described below:
+
+#### ```dim_category``` table
+In _dim_category_ table, we load it directly as it is a dimension table from the _raw_category_ table previously extracted. The SQL query to apply transformation and load _dim_category_ table is:
 
 ```sql
-INSERT INTO category(client_category_id, category_title, assignable)
+INSERT INTO dim_category(client_category_id, category_title, assignable)
 SELECT
 id as client_category_id,
 title as category_title,
 CAST(assignable as BOOLEAN)
 FROM raw_category;
 ```
-Since in our data, we do not need to create those intermediate tables, we directly apply transformation and load to the final tables of the warehouse. 
-
-Each process of transforming and loading to the final tables are briefly described below:
-
-#### ```dim_category``` table
-In _dim_category_ table, we load it directly as it is a dimension table from the category table previously formed. The SQL query to apply transformation and load _dim_category_ table is:
+#### ```dim_channel``` table
+In _dim_channel_ table, we load it directly as it is a dimension table from the category table previously formed. The SQL query to apply transformation and load _dim_channel_ table is:
 
 ```sql
-INSERT INTO dim_category (category_id, category_title, assignable)
-SELECT client_category_id, category, assignable FROM category;
+INSERT INTO dim_channel(channel_name)
+SELECT DISTINCT channel_title FROM raw_video;
+```
+#### ```dim_video``` table
+Since our design is similar to the snowflake schema, we have furthur connected dimension table with another dimension table as we can see in our logical modeling. 
+
+In _dim_video_ table, we load the distinct video records from the _raw_video_ table. We load all the basic information of the video. Some of the transformation applied here are: 
+
+- Counting the number of tags used in the video by splitting with '|'.
+- Separating publish_date and publish_time of the video.
+- Joining is also a kind of transformation applied here to link the channel and categoy information.
+
+```sql
+INSERT INTO dim_video(client_video_id, title, channel_id, category_id, publish_date, publish_time, no_of_tags, comments_disabled,
+                      ratings_disabled, video_error_or_removed, description)
+select distinct
+    v.video_id as client_video_id,
+    v.title as title,
+    c.channel_id as channel_id,
+    dc.category_id as category_id,
+    cast(v.publish_time as DATE) as publish_date,
+    cast(v.publish_time::timestamp::time as TIME) as publish_time,
+    array_length(
+        regexp_split_to_array(replace(replace (tags, '"', ''),'|',','), ',')
+        , 1
+      ) as no_of_tags,
+     cast(v.comments_disabled as BOOLEAN) as comments_disabled,
+     cast(v.ratings_disabled as BOOLEAN) as ratings_disabled,
+     cast(v.video_error_or_removed as BOOLEAN) as video_error_or_removed,
+        description
+from raw_video v
+join dim_channel c on v.channel_title = c.channel_name
+join dim_category dc on v.category_id = dc.client_category_id;
 ```
 
-####  In this way, we have successfully completed the Extraction, Transformation and Loading of raw YouTube Trending Video data into designed warehouse.
+#### ```dim_date``` table
+
+The _dim_date_ is a dimension table that lists all the distinct dates of which we have the trending videos. In another words, it is a table listing all the trending dates in our dataset. We add a new column here as _day_of_week_ which basically maps the date into the day of the week. It is done so that analysis could be done like: which category videos are trending on week days or weekends, etc.
+
+The SQL query to apply transformation and load _dim_channel_ table is:
+
+```sql
+INSERT INTO dim_date(date, day_of_week)
+select distinct
+TO_DATE(trending_date ,'YY-DD-MM') as date,
+to_char(TO_DATE(trending_date ,'YY-DD-MM'), 'Day') as day_of_week
+from raw_video order by TO_DATE(trending_date ,'YY-DD-MM') asc ;
+```
+
+#### ```dim_country``` table
+
+As we can see in our raw datasets, they are categorized according to different countries. We have appended _country_ column in the extraction process as well. Now, we separate the country forming a new dimension table as _dim_country_ which lists all the countries for the trending video analysis. This
+
+In our case, there are 10 countries distinguished by their country codes. We have manually inserted 10 countries so that is will be easier to apply join operations to add referential integrity constraint with the fact table. 
+
+The SQL query to load the _dim_country_ table is:
+
+```sql
+INSERT INTO dim_country(country_code, country_name)
+VALUES ('CA', 'Canada'),
+       ('DE','Denmark'),
+       ('FR','France'),
+       ('GB','Great Britain'),
+       ('IN','India'),
+       ('JP','Japan'),
+       ('KR','South Korea'),
+       ('MX','Mexico'),
+       ('RU','Russia'),
+       ('US','United States of America');
+```
+
+#### Loading ```fact_trending_video``` table
+Finally, after all the dimension tables are loaded, we now apply transformation and load the fact table. This table contains informations about the trending videos according to countries. All the analysis done in this warehouse starts by applying query into the fact table. 
+
+We have applied transformations as joining, casting and converting _trending_date_ from the raw format to the proper format using ```TO_DATE()``` method.
+
+The SQL query to load the _fact_trending_video_ table is:
+
+```sql
+INSERT INTO fact_trending_video(video_id, country_id, trending_date, views, likes, dislike, cmt_count)
+select
+    dv.id as video_id,
+    dc.country_id as country_id,
+    dd.date_id as trending_date,
+    cast(rv.views as INT) as views,
+    cast(rv.likes as INT) as likes,
+    cast(rv.dislikes as INT) as dislikes,
+    cast(rv.comment_count as INT) as comment_count
+from raw_video rv
+join dim_video dv on rv.video_id = dv.client_video_id
+join dim_country dc on dc.country_code = rv.country
+join dim_date dd on TO_DATE(rv.trending_date ,'YY-DD-MM') = dd.date;
+```
+
+#### Python to Database query execution format
+
+As we have mentioned all the postgresql queries in the operations above, the query is executed using python scripts. The base format of the python function is given below:
+
+```python
+def loading_menthod_name(con, cur):
+        truncate_table("<table_name>", con, cur)
+        with open("../sql/queries/load/<name_of_query_file>.sql") as file:
+                        insert_query = ' '.join(map(str, file.readlines())) 
+                        cur.execute(insert_query)       
+                        con.commit()
+        print("Loading successful to <table_name> table.") 
+```
+
+This defined method is called using the ```main()``` method of python where we pass the psycopg2 connection and cursor of the connection as parameters.
 
 Some of the things to mention:
 - All the python scripts were written with proper error handling using ```try-except``` block.
@@ -321,3 +427,4 @@ def truncate_table(table_name, con, cur):
 ```
  And lastly, dotenv was used for secret and confidential values as storing database credentials and was extracted from the file when needed.
 
+####  In this way, we have successfully completed the Extraction, Transformation and Loading of raw YouTube Trending Video data into designed warehouse.
