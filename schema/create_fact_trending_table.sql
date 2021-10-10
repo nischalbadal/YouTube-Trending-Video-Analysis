@@ -5,7 +5,7 @@ country_id INT,
 trending_date INT,
 views INT,
 likes INT,
-dislike INT,
+dislikes INT,
 cmt_count INT,
 CONSTRAINT fk_video_id FOREIGN KEY (video_id)
 REFERENCES dim_video(id) ON DELETE CASCADE,

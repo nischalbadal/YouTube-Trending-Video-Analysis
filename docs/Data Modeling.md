@@ -1,4 +1,4 @@
-# Requirements Gathering and Modeling for eCommerce
+# Requirements Gathering and Modeling for YouTube Trending Video Analysis
 The following is the requirements gathering, conceptual model and physical model of the data warehouse to analyze the trending videos of youtube.
 
 ## Requirements Identification
@@ -38,7 +38,7 @@ The attributes of the fact and dimension tables can be identified as:
 | ```dim_date``` | date_id, date, day_of_week | 
 | ```dim_channel``` | channel_id, channel_name | 
 | ```dim_category``` | category_id, client_category_id, category_title, assignable | 
-| ```dim_video``` | video_id, title, published_date, channel_id, category_id, publish_date, no_of_tags,comments_disabled, ratings_disabled, video_error_or_removal, description | 
+| ```dim_video``` | video_id, title, publish_date, publish_time, channel_id, category_id, publish_date, no_of_tags,comments_disabled, ratings_disabled, video_error_or_removed, description | 
 | ```fact_trending_video``` | trending_video_id, video_id, country_id, trending_date, views, likes, dislikes, comments_count| 
 
 #### 4. ER Diagram
@@ -72,8 +72,8 @@ CREATE TABLE dim_country(
 ```sql
 CREATE TABLE dim_date(
     date_id SERIAL PRIMARY KEY,
-    date   date,
-    day_of_week VARCHAR(255)
+    date DATE,
+    day_of_week VARCHAR(100)
 );
 ```
 ```sql
@@ -89,13 +89,14 @@ CREATE TABLE dim_video(
     id SERIAL PRIMARY KEY,
 	client_video_id	VARCHAR(255),
 	title	TEXT,
-	channel_id INT,
-	category_id INT,
-	publish_date INT,
+	channel_id INT REFERENCES dim_channel(channel_id),
+	category_id INT REFERENCES dim_category(category_id),
+	publish_date DATE,
+	publish_time TIME,
 	no_of_tags BIGINT,
     comments_disabled BOOLEAN,
     ratings_disabled BOOLEAN,
-    video_error_or_removal BOOLEAN,
+    video_error_or_removed BOOLEAN,
     description TEXT
 	);
 ```
@@ -111,7 +112,7 @@ likes INT,
 dislike INT,
 cmt_count INT,
 CONSTRAINT fk_video_id FOREIGN KEY (video_id)
-REFERENCES dim_videos(video_id) ON DELETE CASCADE,
+REFERENCES dim_video(id) ON DELETE CASCADE,
 CONSTRAINT fk_country_id FOREIGN KEY (country_id)
 REFERENCES dim_country(country_id) ON DELETE CASCADE,
 CONSTRAINT fk_trending_date FOREIGN KEY (trending_date)

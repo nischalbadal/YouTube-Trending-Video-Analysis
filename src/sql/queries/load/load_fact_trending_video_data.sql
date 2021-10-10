@@ -1,4 +1,4 @@
-INSERT INTO fact_trending_video(video_id, country_id, trending_date, views, likes, dislike, cmt_count)
+INSERT INTO fact_trending_video(video_id, country_id, trending_date, views, likes, dislikes, cmt_count)
 select
     dv.id as video_id,
     dc.country_id as country_id,
