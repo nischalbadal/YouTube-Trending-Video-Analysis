@@ -17,7 +17,7 @@ try:
                     i+=1
                     continue
                 row.append(country)
-                with open("../sql/queries/extract_raw_video_data.sql") as f:
+                with open("../sql/queries/extract/extract_raw_video_data.sql") as f:
                     sql = ' '.join(map(str, f.readlines()))
                     cur.execute(sql, row)
                     con.commit()
@@ -25,13 +25,28 @@ try:
     
        
     def archive_video_data(con, cur):
-        with open("../sql/queries/extract_archive_raw_video_data.sql") as f:
+        with open("../sql/queries/extract/extract_archive_raw_video_data.sql") as f:
             sql = ' '.join(map(str, f.readlines()))
             cur.execute(sql)
             con.commit()
 
         print("Archiving successful to copy_raw_video table.") 
 
+    def load_dim_channel_data_table(con, cur):
+      truncate_table("dim_channel", con, cur)
+      with open("../sql/queries/load/load_dim_channel_data.sql") as file:
+                      insert_query = ' '.join(map(str, file.readlines())) 
+                      cur.execute(insert_query)       
+                      con.commit()
+      print("Loading successful to dim_channel table.") 
+    
+    def load_dim_date_data_table(con, cur):
+        truncate_table("dim_date", con, cur)
+        with open("../sql/queries/load/load_dim_date_data.sql") as file:
+                        insert_query = ' '.join(map(str, file.readlines())) 
+                        cur.execute(insert_query)       
+                        con.commit()
+        print("Loading successful to dim_date table.") 
 
     def main():
         con = connect()
@@ -51,7 +66,9 @@ try:
         extract_video_data("../../data/USvideos.csv",con,cur)
 
         archive_video_data(con, cur)
-
+        load_dim_channel_data_table(con, cur)
+        load_dim_date_data_table(con, cur)
+        
         cur.close()
         con.close()
 

@@ -23,14 +23,14 @@ try:
                             country
                           ])
                 for row in formatted_list:
-                    with open("../sql/queries/extract_raw_category_data.sql") as file:
+                    with open("../sql/queries/extract/extract_raw_category_data.sql") as file:
                         insert_query = ' '.join(map(str, file.readlines())) 
                         cur.execute(insert_query, row)       
                         con.commit()
         print("Extraction of "+country+" data successful to raw_category table.") 
        
     def archive_category_data(con, cur):
-        with open("../sql/queries/extract_archive_raw_category_data.sql") as file:
+        with open("../sql/queries/extract/extract_archive_raw_category_data.sql") as file:
                         insert_query = ' '.join(map(str, file.readlines())) 
                         cur.execute(insert_query)       
                         con.commit()
@@ -38,12 +38,20 @@ try:
         print("Archiving successful to archive_raw_category table.") 
 
     def load_dim_category_data_table(con, cur):
-        truncate_table("archive_raw_category", con, cur)
-        with open("../sql/queries/extract_dim_category_data.sql") as file:
+        truncate_table("dim_category", con, cur)
+        with open("../sql/queries/load/load_dim_category_data.sql") as file:
                         insert_query = ' '.join(map(str, file.readlines())) 
                         cur.execute(insert_query)       
                         con.commit()
-        print("Archiving successful to dim_category table.") 
+        print("Loading successful to dim_category table.") 
+    
+    def load_dim_country_data_table(con, cur):
+        truncate_table("dim_country", con, cur)
+        with open("../sql/queries/load/load_dim_country_data.sql") as file:
+                        insert_query = ' '.join(map(str, file.readlines())) 
+                        cur.execute(insert_query)       
+                        con.commit()
+        print("Loading successful to dim_country table.") 
       
 
     def main():
@@ -66,6 +74,8 @@ try:
 
         archive_category_data(con,cur)
         load_dim_category_data_table(con, cur)
+        load_dim_country_data_table(con, cur)
+        
         cur.close()
         con.close()
 

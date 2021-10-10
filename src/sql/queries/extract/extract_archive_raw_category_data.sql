@@ -5,4 +5,3 @@ DO UPDATE SET
     country = EXCLUDED.country || ';' || archive_raw_category.country;
 
     
-
