@@ -26,9 +26,10 @@ The following are the dimension tables identified for the data warehouse to anal
 Similarly after identifying the dimension tables, we now identify the fact tables to create the data warehouse and carry out the analysis. The fact tables identified are:
 ```fact_trending_video``` - Consists all the records of trending videos and their general information,country, date of publish and trending, and other engagement factors as views, likes, dislikes and comments count. 
 
+![Conceptual Diagram](conceptual-modeling.drawio.png)
 
-#### 3. Identifying the attributes of facts and dimension tables
-This step occurs in the logical design modeling phase. But it can be done in conceptual modeling as well. Here, we identify all tha attributes of the entities pre-sepcified (in number 1 and 2 above).
+#### Logical Data Modeling
+This step occurs after the conceptual modeling phase. But it can be done in conceptual modeling as well. Here, we identify all tha attributes of the entities pre-sepcified (in number 1 and 2 above).
 
 The attributes of the fact and dimension tables can be identified as:
 
@@ -41,7 +42,7 @@ The attributes of the fact and dimension tables can be identified as:
 | ```dim_video``` | video_id, title, publish_date, publish_time, channel_id, category_id, publish_date, no_of_tags,comments_disabled, ratings_disabled, video_error_or_removed, description | 
 | ```fact_trending_video``` | trending_video_id, video_id, country_id, trending_date, views, likes, dislikes, comments_count| 
 
-#### 4. ER Diagram
+#### Final Data Warehouse Schema Diagram
 After we identify the tables abd their attributes, we now create an ER diagram for the data warehouse. Since, we have multiple facts table, our ER diagram would be of Star Schema design which incorporates single facts table.
 
 The proposed ER Diagram of the data warehouse would be:
