@@ -1,7 +1,7 @@
 # Youtube Trending Video Data Analysis
 #### Data Engineering 
  
- In this final project, we carry out all the process from designing the database, ETL of the raw database into the transformed and loaded final tables, designing the Data Warehouse, Validating using SQL test cases and finally visualizing the data using Microsoft PowerBI.
+ In this project, we carry out all the process from designing the database, ETL of the raw database into the transformed and loaded final tables, designing the Data Warehouse, Validating using SQL test cases and finally visualizing the data using Microsoft PowerBI.
  
  The data for the project was obtained from [here](https://www.kaggle.com/datasnaek/youtube-new?select=USvideos.csv).
 
